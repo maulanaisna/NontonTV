@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Web TV - iPhone Ready</title>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; }
+        .video-js { width: 100%; height: 300px; margin: 0 auto; }
+        h2 { font-size: 18px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h2>TV Online Player</h2>
+    
+    <video id="player" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto">
+        <source src="https://raw.githubusercontent.com/dyndos/IPTV-INDONESIA/master/iptv-indonesia.m3u" type="application/x-mpegURL">
+    </video>
+
+    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+    <p>Buka di Safari iPhone dan pilih "Add to Home Screen"</p>
+</body>
+</html>
