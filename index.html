@@ -2,42 +2,58 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Web TV - iPhone Ready</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BitTV Web Dashboard</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .player-container { width: 100%; max-width: 640px; border-radius: 15px; overflow: hidden; background: #000; }
-        .channel-list { margin-top: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 640px; }
-        button { background: #333; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        button:active { background: #00ff88; color: black; }
-        h1 { font-size: 1.2rem; color: #00ff88; }
+        body { background: #121212; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding-bottom: 50px; }
+        .header { background: #1f1f1f; padding: 15px; text-align: center; font-weight: bold; font-size: 20px; border-bottom: 2px solid #ff9800; }
+        .video-container { position: sticky; top: 0; z-index: 100; background: black; }
+        .video-js { width: 100% !important; height: 210px !important; }
+        .category-title { padding: 15px 10px 5px; font-size: 14px; color: #bbb; text-transform: uppercase; letter-spacing: 1px; }
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
+        .chan-card { background: #252525; padding: 15px 5px; text-align: center; border-radius: 8px; font-size: 12px; cursor: pointer; border: 1px solid #333; transition: 0.3s; }
+        .chan-card:active { background: #ff9800; color: black; }
+        .footer-note { font-size: 10px; color: #666; padding: 20px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <h1>📺 My Web TV - iPhone</h1>
+<div class="header">BIT TV WEB</div>
 
-    <div class="player-container">
-        <video id="tv-player" class="video-js vjs-fluid vjs-default-skin" controls preload="auto">
-            <source id="video-source" src="https://content.jwplatform.com/manifests/vM7nH0Kl.m3u8" type="application/x-mpegURL">
-        </video>
-    </div>
+<div class="video-container">
+    <video id="tv-player" class="video-js vjs-default-skin vjs-16-9" controls preload="auto" playsinline>
+        <source src="https://raw.githubusercontent.com/dyndos/IPTV-INDONESIA/master/iptv-indonesia.m3u" type="application/x-mpegURL">
+    </video>
+</div>
 
-    <div class="channel-list">
-        <button onclick="changeChannel('https://content.jwplatform.com/manifests/vM7nH0Kl.m3u8')">TRANS 7</button>
-        <button onclick="changeChannel('https://content.jwplatform.com/manifests/yp34SRAn.m3u8')">TRANS TV</button>
-        <button onclick="changeChannel('https://live.cnbcindonesia.com/live/cnbc/playlist.m3u8')">CNBC INDO</button>
-        <button onclick="changeChannel('https://live.detik.com/detiktv/detiktv/playlist.m3u8')">DETIK TV</button>
-    </div>
+<div class="category-title">Channel Lokal & Sport</div>
+<div class="grid-container">
+    <div class="chan-card" onclick="playVid('https://raw.githubusercontent.com/dyndos/IPTV-INDONESIA/master/iptv-indonesia.m3u')">Lokal Full</div>
+    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/countries/id.m3u')">Indonesia 2</div>
+    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/categories/sports.m3u')">Sports</div>
+    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/categories/movies.m3u')">Movies</div>
+    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/categories/animation.m3u')">Kids</div>
+    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/categories/news.m3u')">News</div>
+</div>
 
-    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
-    <script>
-        var player = videojs('tv-player');
-        function changeChannel(url) {
-            player.src({ type: 'application/x-mpegURL', src: url });
-            player.play();
-        }
-    </script>
+<div class="footer-note">
+    Gunakan Safari > Share > Add to Home Screen untuk pengalaman seperti aplikasi.
+</div>
+
+<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+<script>
+    var player = videojs('tv-player');
+
+    function playVid(url) {
+        player.src({
+            src: url,
+            type: 'application/x-mpegURL'
+        });
+        player.play();
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+</script>
+
 </body>
 </html>
