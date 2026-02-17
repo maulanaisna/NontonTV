@@ -3,73 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAULANA TV - Dashboard</title>
+    <title>ALFA PONSEL TV - Streaming</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; }
-        .header { background: #222; padding: 20px; text-align: center; color: #ff9800; font-weight: bold; font-size: 20px; border-bottom: 2px solid #ff9800; }
-        .container { padding: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-        .card { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .card:hover { border-color: #ff9800; background: #222; }
-        .card img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 8px; border-radius: 5px; }
-        .card div { font-size: 12px; font-weight: bold; color: #eee; height: 34px; overflow: hidden; }
-        .msg { text-align: center; margin-top: 50px; color: #888; }
+        :root { --primary: #00ff00; --bg: #0a0a0a; --card: #1e1e1e; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; }
+        .header { background: #000; padding: 20px; text-align: center; border-bottom: 2px solid var(--primary); }
+        .header h1 { margin: 0; color: var(--primary); font-size: 24px; letter-spacing: 2px; }
+        .container { max-width: 1000px; margin: auto; padding: 15px; }
+        
+        #video-wrapper { position: sticky; top: 10px; z-index: 100; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 1px solid #333; margin-bottom: 25px; }
+        video { width: 100%; aspect-ratio: 16/9; display: block; }
+
+        .category-title { background: linear-gradient(90deg, #333, transparent); padding: 8px 15px; margin: 20px 0 10px; border-left: 4px solid var(--primary); font-size: 14px; font-weight: bold; text-transform: uppercase; color: #ccc; }
+        
+        .channel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+        .channel-card { background: var(--card); border: 1px solid #333; padding: 15px 10px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; min-height: 50px; }
+        .channel-card:hover { border-color: var(--primary); background: #252525; transform: translateY(-2px); color: var(--primary); }
+        .channel-card.active { background: var(--primary); color: #000; font-weight: bold; border-color: var(--primary); }
+        
+        @media (max-width: 600px) { .channel-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } }
     </style>
 </head>
 <body>
 
-<div class="header">MAULANA TV ONLINE</div>
-<div id="msg" class="msg">Sedang Membaca Playlist Nav67...</div>
-<div class="container" id="list"></div>
+<div class="header">
+    <h1>ALFA PONSEL TV</h1>
+</div>
+
+<div class="container">
+    <div id="video-wrapper">
+        <video id="video" controls autoplay playsinline></video>
+    </div>
+
+    <div id="main-list">
+        <p style="text-align:center; opacity: 0.5;">Memuat siaran...</p>
+    </div>
+</div>
 
 <script>
+    // Link M3U Raw kamu
     const m3uUrl = 'https://raw.githubusercontent.com/maulanaisna/NontonTV/main/maulanaisna.m3u';
+    
+    const video = document.getElementById('video');
+    const mainList = document.getElementById('main-list');
 
-    async function fetchTV() {
+    async function initTV() {
         try {
             const res = await fetch(m3uUrl);
-            const data = await res.text();
-            const lines = data.split('\n');
-            const list = document.getElementById('list');
-            document.getElementById('msg').style.display = 'none';
+            const text = await res.text();
+            const lines = text.split('\n');
+            mainList.innerHTML = '';
+            
+            let currentGroup = "";
+            let grid = null;
 
             for (let i = 0; i < lines.length; i++) {
-                if (lines[i].includes('#EXTINF')) {
-                    // Ambil Nama
-                    let name = lines[i].split(',')[1] || "Channel";
-                    // Ambil Logo
-                    let logo = "";
-                    if (lines[i].includes('tvg-logo="')) {
-                        logo = lines[i].split('tvg-logo="')[1].split('"')[0];
-                    }
-                    // Cari baris URL (lewatkan baris #KODIPROP)
-                    let url = "";
-                    for (let j = i + 1; j < i + 5; j++) {
-                        if (lines[j] && lines[j].trim().startsWith('http')) {
-                            url = lines[j].trim().split('|')[0]; // Ambil link murni sebelum tanda |
-                            break;
-                        }
-                    }
+                if (lines[i].startsWith('#EXTINF')) {
+                    const line = lines[i];
+                    const name = line.split(',')[1] || "Tanpa Nama";
+                    
+                    // Ambil grup
+                    const groupMatch = line.match(/group-title="([^"]+)"/);
+                    const group = groupMatch ? groupMatch[1] : "LAIN-LAIN";
+                    
+                    const url = lines[i+1]?.trim();
 
-                    if (url) {
-                        const item = document.createElement('div');
-                        item.className = 'card';
-                        item.innerHTML = `
-                            <img src="${logo || 'https://via.placeholder.com/60?text=TV'}" onerror="this.src='https://via.placeholder.com/60?text=TV'">
-                            <div>${name}</div>
-                        `;
-                        item.onclick = () => {
-                            // Karena banyak yang DRM, kita arahkan buka lewat VLC atau Player External
-                            alert("Link: " + url + "\n\nTips: Copy link ini ke aplikasi VLC atau Smarters Player karena browser tidak mendukung siaran yang dikunci (DRM).");
+                    if (url && url.startsWith('http')) {
+                        // Jika grup baru, buat judul kategori
+                        if (group !== currentGroup) {
+                            const title = document.createElement('div');
+                            title.className = 'category-title';
+                            title.innerText = group;
+                            mainList.appendChild(title);
+                            
+                            grid = document.createElement('div');
+                            grid.className = 'channel-grid';
+                            mainList.appendChild(grid);
+                            
+                            currentGroup = group;
+                        }
+
+                        // Buat tombol channel
+                        const card = document.createElement('div');
+                        card.className = 'channel-card';
+                        card.innerText = name;
+                        card.onclick = function() {
+                            // Hapus status active dari tombol lain
+                            document.querySelectorAll('.channel-card').forEach(c => c.classList.remove('active'));
+                            this.classList.add('active');
+                            playStream(url);
                         };
-                        list.appendChild(item);
+                        grid.appendChild(card);
                     }
                 }
             }
         } catch (e) {
-            document.getElementById('msg').innerText = "Gagal memuat file m3u.";
+            mainList.innerHTML = '<p style="color:red; text-align:center;">Gagal mengambil data siaran.</p>';
         }
     }
-    fetchTV();
+
+    function playStream(url) {
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+            video.play();
+        }
+        // Scroll otomatis ke video saat klik channel di HP
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    initTV();
 </script>
+
 </body>
 </html>
+
