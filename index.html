@@ -3,93 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maulana TV Dashboard</title>
-    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+    <title>MAULANA TV - Dashboard</title>
     <style>
-        body { background: #121212; color: white; font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 20px; }
-        .header { background: #1f1f1f; padding: 15px; text-align: center; border-bottom: 2px solid #ff9800; font-weight: bold; }
-        .video-container { position: sticky; top: 0; z-index: 100; background: black; border-bottom: 1px solid #333; }
-        .video-js { width: 100% !important; height: 210px !important; }
-        .list-container { padding: 10px; }
-        .chan-card { 
-            background: #252525; margin-bottom: 8px; padding: 15px; 
-            border-radius: 10px; border: 1px solid #333; 
-            display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer;
-        }
-        .chan-card:active { background: #ff9800; color: black; }
-        .status { text-align: center; padding: 20px; color: #888; font-size: 14px; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; }
+        .header { background: #222; padding: 20px; text-align: center; color: #ff9800; font-weight: bold; font-size: 20px; border-bottom: 2px solid #ff9800; }
+        .container { padding: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .card { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .card:hover { border-color: #ff9800; background: #222; }
+        .card img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 8px; border-radius: 5px; }
+        .card div { font-size: 12px; font-weight: bold; color: #eee; height: 34px; overflow: hidden; }
+        .msg { text-align: center; margin-top: 50px; color: #888; }
     </style>
 </head>
 <body>
 
 <div class="header">MAULANA TV ONLINE</div>
+<div id="msg" class="msg">Sedang Membaca Playlist Nav67...</div>
+<div class="container" id="list"></div>
 
-<div class="video-container">
-    <video id="tv-player" class="video-js vjs-default-skin vjs-16-9" controls preload="auto" playsinline></video>
-</div>
-
-<div id="status" class="status">Sedang memproses playlist...</div>
-<div class="list-container" id="playlist-container"></div>
-
-<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
 <script>
-    var player = videojs('tv-player');
-    // LINK SAKTI KAMU
     const m3uUrl = 'https://raw.githubusercontent.com/maulanaisna/NontonTV/main/maulanaisna.m3u';
 
-    async function loadM3U() {
-        const status = document.getElementById('status');
-        const container = document.getElementById('playlist-container');
-
+    async function fetchTV() {
         try {
-            const response = await fetch(m3uUrl);
-            if (!response.ok) throw new Error('Gagal ambil file');
-            const text = await response.text();
-            
-            const lines = text.split('\n');
-            let channelsFound = 0;
+            const res = await fetch(m3uUrl);
+            const data = await res.text();
+            const lines = data.split('\n');
+            const list = document.getElementById('list');
+            document.getElementById('msg').style.display = 'none';
 
             for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-                
-                if (line.startsWith('#EXTINF')) {
-                    // Ambil nama channel setelah koma
-                    let parts = line.split(',');
-                    let name = parts[parts.length - 1] || "Unnamed Channel";
-                    
-                    // Baris berikutnya biasanya adalah URL-nya
-                    let url = lines[i + 1] ? lines[i + 1].trim() : "";
-                    
-                    if (url.startsWith('http')) {
-                        channelsFound++;
-                        const card = document.createElement('div');
-                        card.className = 'chan-card';
-                        card.innerHTML = `<span>${name}</span> <strong>▶</strong>`;
-                        card.onclick = function() {
-                            player.src({ src: url, type: 'application/x-mpegURL' });
-                            player.play();
-                            window.scrollTo({top: 0, behavior: 'smooth'});
+                if (lines[i].includes('#EXTINF')) {
+                    // Ambil Nama
+                    let name = lines[i].split(',')[1] || "Channel";
+                    // Ambil Logo
+                    let logo = "";
+                    if (lines[i].includes('tvg-logo="')) {
+                        logo = lines[i].split('tvg-logo="')[1].split('"')[0];
+                    }
+                    // Cari baris URL (lewatkan baris #KODIPROP)
+                    let url = "";
+                    for (let j = i + 1; j < i + 5; j++) {
+                        if (lines[j] && lines[j].trim().startsWith('http')) {
+                            url = lines[j].trim().split('|')[0]; // Ambil link murni sebelum tanda |
+                            break;
+                        }
+                    }
+
+                    if (url) {
+                        const item = document.createElement('div');
+                        item.className = 'card';
+                        item.innerHTML = `
+                            <img src="${logo || 'https://via.placeholder.com/60?text=TV'}" onerror="this.src='https://via.placeholder.com/60?text=TV'">
+                            <div>${name}</div>
+                        `;
+                        item.onclick = () => {
+                            // Karena banyak yang DRM, kita arahkan buka lewat VLC atau Player External
+                            alert("Link: " + url + "\n\nTips: Copy link ini ke aplikasi VLC atau Smarters Player karena browser tidak mendukung siaran yang dikunci (DRM).");
                         };
-                        container.appendChild(card);
+                        list.appendChild(item);
                     }
                 }
             }
-
-            if (channelsFound > 0) {
-                status.style.display = 'none';
-            } else {
-                status.innerText = "Playlist kosong atau format salah.";
-            }
-
-        } catch (error) {
-            status.innerText = "Error: " + error.message + ". Pastikan link raw benar.";
-            console.error(error);
+        } catch (e) {
+            document.getElementById('msg').innerText = "Gagal memuat file m3u.";
         }
     }
-
-    loadM3U();
+    fetchTV();
 </script>
-
 </body>
 </html>
