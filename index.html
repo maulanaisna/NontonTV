@@ -2,58 +2,84 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BitTV Web Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nav67 TV Dashboard</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
     <style>
-        body { background: #121212; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding-bottom: 50px; }
-        .header { background: #1f1f1f; padding: 15px; text-align: center; font-weight: bold; font-size: 20px; border-bottom: 2px solid #ff9800; }
-        .video-container { position: sticky; top: 0; z-index: 100; background: black; }
-        .video-js { width: 100% !important; height: 210px !important; }
-        .category-title { padding: 15px 10px 5px; font-size: 14px; color: #bbb; text-transform: uppercase; letter-spacing: 1px; }
-        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
-        .chan-card { background: #252525; padding: 15px 5px; text-align: center; border-radius: 8px; font-size: 12px; cursor: pointer; border: 1px solid #333; transition: 0.3s; }
-        .chan-card:active { background: #ff9800; color: black; }
-        .footer-note { font-size: 10px; color: #666; padding: 20px; text-align: center; }
+        body { background: #121212; color: #eee; font-family: sans-serif; margin: 0; padding-bottom: 30px; }
+        .vjs-container { position: sticky; top: 0; z-index: 100; background: #000; width: 100%; }
+        .video-js { width: 100% !important; height: 230px !important; }
+        .search-bar { padding: 10px; background: #1f1f1f; }
+        #search { width: 100%; padding: 10px; border-radius: 5px; border: none; box-sizing: border-box; background: #333; color: white; }
+        .chan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+        .card { background: #252525; border: 1px solid #333; border-radius: 10px; padding: 15px; text-align: center; font-size: 13px; cursor: pointer; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card:active { background: #ff9800; color: #000; }
+        .group-tag { font-size: 10px; color: #ff9800; display: block; margin-bottom: 5px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-<div class="header">BIT TV WEB</div>
-
-<div class="video-container">
-    <video id="tv-player" class="video-js vjs-default-skin vjs-16-9" controls preload="auto" playsinline>
-        <source src="https://raw.githubusercontent.com/dyndos/IPTV-INDONESIA/master/iptv-indonesia.m3u" type="application/x-mpegURL">
-    </video>
+<div class="vjs-container">
+    <video id="tv-player" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" playsinline></video>
 </div>
 
-<div class="category-title">Channel Lokal & Sport</div>
-<div class="grid-container">
-    <div class="chan-card" onclick="playVid('https://raw.githubusercontent.com/dyndos/IPTV-INDONESIA/master/iptv-indonesia.m3u')">Lokal Full</div>
-    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/countries/id.m3u')">Indonesia 2</div>
-    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/categories/sports.m3u')">Sports</div>
-    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/categories/movies.m3u')">Movies</div>
-    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/categories/animation.m3u')">Kids</div>
-    <div class="chan-card" onclick="playVid('https://iptv-org.github.io/iptv/categories/news.m3u')">News</div>
+<div class="search-bar">
+    <input type="text" id="search" placeholder="Cari channel (contoh: Moji, Sky, Astro)...">
 </div>
 
-<div class="footer-note">
-    Gunakan Safari > Share > Add to Home Screen untuk pengalaman seperti aplikasi.
-</div>
+<div class="chan-grid" id="chan-list">
+    </div>
 
 <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/videojs-contrib-dash/dist/videojs-dash.min.js"></script>
+
 <script>
-    var player = videojs('tv-player');
+    const player = videojs('tv-player');
+    const m3uUrl = 'https://github.com/maulanaisna/NontonTV/raw/refs/heads/main/playlist%20iptv%20nav67.m3u';
+    let allChannels = [];
 
-    function playVid(url) {
-        player.src({
-            src: url,
-            type: 'application/x-mpegURL'
+    async function init() {
+        const res = await fetch(m3uUrl);
+        const text = await res.text();
+        const lines = text.split('\n');
+        
+        let currentChan = {};
+        lines.forEach(line => {
+            if (line.startsWith('#EXTINF')) {
+                const name = line.split(',')[1] || "Unknown";
+                const groupMatch = line.match(/group-title="([^"]+)"/);
+                currentChan = { name: name.trim(), group: groupMatch ? groupMatch[1] : "Lainnya" };
+            } else if (line.startsWith('http')) {
+                currentChan.url = line.trim();
+                allChannels.push(currentChan);
+                currentChan = {};
+            }
         });
-        player.play();
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        render(allChannels);
     }
-</script>
 
+    function render(channels) {
+        const container = document.getElementById('chan-list');
+        container.innerHTML = '';
+        channels.forEach(ch => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `<span class="group-tag">${ch.group}</span>${ch.name}`;
+            div.onclick = () => {
+                player.src({ src: ch.url, type: ch.url.includes('.mpd') ? 'application/dash+xml' : 'application/x-mpegURL' });
+                player.play();
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            };
+            container.appendChild(div);
+        });
+    }
+
+    document.getElementById('search').oninput = (e) => {
+        const filtered = allChannels.filter(c => c.name.toLowerCase().includes(e.target.value.toLowerCase()));
+        render(filtered);
+    };
+
+    init();
+</script>
 </body>
 </html>
